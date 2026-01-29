@@ -1,0 +1,610 @@
+/* ================================================== */
+/* =============== CHUNK: VARIABLES ================= */
+/* ================================================== */
+
+:root{
+  /* Dark theme defaults (ChatGPT-like neutral palette) */
+  --bg:#0b0b0d;
+  --bg-2:#0b0b0d;
+  --panel:#141417;
+  --panel-2:#1c1c20;
+  --border:#2a2a31;
+  --text:#ececf1;
+  --muted:#a1a1aa;
+  --primary:#7c3aed;     /* accent */
+  --primary-2:#6d28d9;
+  --primary-rgb:124,58,237;
+  --danger:#e5484d;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+
+  --user-grad-1:#2a2a31;
+  --user-grad-2:#2a2a31;
+  --user-bg:#2a2a31;
+  --assistant-bg:transparent;
+
+  --radius:12px;
+  --blur:10px;
+
+  /* Chat column width (center 1/3-ish). */
+  --chat-col: clamp(420px, 34vw, 860px);
+}
+
+/* Light theme overrides */
+.theme-light{
+  --bg:#ffffff;
+  --bg-2:#ffffff;
+  --panel:#f7f7f8;
+  --panel-2:#ffffff;
+  --border:#e5e5e7;
+  --text:#111113;
+  --muted:#6b7280;
+  --primary:#7c3aed;
+  --primary-2:#6d28d9;
+  --primary-rgb:124,58,237;
+  --danger:#e5484d;
+
+  --user-grad-1:#eef0f3;
+  --user-grad-2:#eef0f3;
+  --user-bg:#eef0f3;
+  --assistant-bg:transparent;
+}
+
+
+/* ================================================== */
+/* ============== CHUNK: BASE & RESET =============== */
+/* ================================================== */
+
+*{ box-sizing:border-box }
+html, body, #root{ height:100% }
+body{
+  margin:0;
+  background:
+    radial-gradient(1200px 700px at 50% -100px, rgba(255,255,255,.06), transparent 60%),
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+  color:var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+a{ color:inherit; text-decoration:none }
+button{ font:inherit; }
+
+
+/* ================================================== */
+/* ============== CHUNK: GRID LAYOUT =================*/
+/* ================================================== */
+
+.layout{
+  display:grid;
+  grid-template-columns: 300px 1fr;
+  height:100vh;
+  transition:grid-template-columns .2s ease;
+  background:linear-gradient(180deg, var(--bg), var(--bg-2));
+}
+
+/* Collapsed sidebar — shrink instead of hide */
+.layout.sidebar-collapsed{ grid-template-columns: 64px 1fr }
+.layout.sidebar-collapsed .sidebar{ width:64px; min-width:64px }
+.layout.sidebar-collapsed .sidebar-header{ justify-content:center }
+.layout.sidebar-collapsed .logo{ margin:0 auto }
+.layout.sidebar-collapsed .sidebar-list,
+.layout.sidebar-collapsed .projects,
+.layout.sidebar-collapsed .chat-nested,
+.layout.sidebar-collapsed .project-name,
+.layout.sidebar-collapsed .project-sub,
+.layout.sidebar-collapsed .chat-title,
+.layout.sidebar-collapsed .chat-sub { display:none }
+
+/* Compact mode — visibly tighter but not cramped */
+.layout.compact .sidebar-list{ padding:8px }
+.layout.compact .project-item,
+.layout.compact .chat-item{ padding:6px 8px }
+.layout.compact .chat{ padding:10px 10px 4px 10px }
+.layout.compact .row{ margin:4px 0 }
+.layout.compact .bubble{ padding:8px 10px; border-radius:10px }
+.layout.compact .bubble .ts{ font-size:10px }
+.layout.compact .inputbar{ padding:6px }
+.layout.compact .input{ min-height:30px }
+
+
+/* ================================================== */
+/* =============== CHUNK: SIDEBAR =================== */
+/* ================================================== */
+
+.sidebar{
+  position:relative;                 /* stacking context for dropdown */
+  background:var(--panel);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  overflow:auto;
+}
+.sidebar-header{
+  height:44px;
+  padding:0 12px;
+  background:var(--panel);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.logo{
+  font-size:14px;
+  font-weight:700;
+  color:var(--primary);
+  cursor:pointer;
+  user-select:none;
+}
+
+/* Projects + chats container (allow dropdown to escape) */
+.projects{ position:relative; overflow:visible }
+
+/* Project rows */
+.project-block{ margin-bottom:6px }
+.project-row{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 10px; border-radius:8px; cursor:pointer;
+  transition: background .15s ease;
+}
+.project-row:hover{ background:var(--panel-2) }
+.project-row.active{ background:rgba(var(--primary-rgb),.12); outline:1px solid rgba(var(--primary-rgb),.35) }
+.project-name{ font-weight:600; font-size:13px; flex:1; overflow:hidden; text-overflow:ellipsis }
+
+/* Project/chat options (⋯) */
+.project-options{ position:relative; display:inline-flex; align-items:center; justify-content:center; min-width:24px }
+.project-options .icon{ background:none; border:0; color:var(--muted); cursor:pointer; padding:2px 6px }
+.project-options .icon:hover{ color:#fff }
+.theme-light .project-options .icon:hover{ color:#000 }
+
+/* Sidebar list + items */
+.sidebar-list{ padding:12px; display:flex; flex-direction:column; gap:8px }
+.list-item{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:8px 10px; border-radius:10px; cursor:pointer; transition: background .15s ease;
+  color:var(--text);
+}
+.list-item:hover{ background:var(--panel-2) }
+.list-item.active{ background:rgba(var(--primary-rgb),.12); outline:1px solid rgba(var(--primary-rgb),.35) }
+.list-item.muted{ color:var(--muted); font-size:12px }
+
+.chat-nested{ margin-left:12px; margin-top:6px; display:flex; flex-direction:column; gap:4px }
+.list-item.nested{ font-size:12px; padding:6px 8px }
+
+/* Dot menu dropdown (over the list) */
+.dropdown{
+  position:absolute; top:100%; right:0; margin-top:4px;
+  background:var(--panel-2); border:1px solid var(--border); border-radius:8px;
+  box-shadow:var(--shadow); display:flex; flex-direction:column; min-width:140px;
+  z-index:10000; /* prioritized */
+}
+.dropdown button{
+  background:none; border:0; color:var(--text);
+  padding:8px 12px; text-align:left; cursor:pointer;
+}
+.dropdown button:hover{ background:var(--panel) }
+
+
+/* ================================================== */
+/* =============== CHUNK: LIST ITEMS =================*/
+/* ================================================== */
+
+.project-list, .chat-list{ padding:0 8px 12px 8px }
+.project-item, .chat-item{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px;
+  padding:10px 12px; border-radius:10px; cursor:pointer; position:relative;
+  transition: background .15s ease, outline-color .15s ease, transform .05s ease;
+}
+.project-item:hover, .chat-item:hover{
+  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.04));
+  outline:1px solid rgba(255,255,255,.06);
+}
+.theme-light .project-item:hover, .theme-light .chat-item:hover{
+  background:linear-gradient(180deg, rgba(0,0,0,.025), rgba(0,0,0,.02));
+  outline:1px solid rgba(0,0,0,.05);
+}
+.project-item:active, .chat-item:active{ transform: translateY(1px) }
+.project-item.active, .chat-item.active{
+  background:rgba(var(--primary-rgb),.12);
+  outline:1px solid rgba(var(--primary-rgb),.35);
+}
+.project-name, .chat-title{ font-weight:600; font-size:14px }
+.project-sub, .chat-sub{ font-size:8px; color:var(--muted) }
+
+/* Align delete (X) and project options (…) */
+.chat-item .icon,
+.project-options .icon{
+  background:none; border:0; color:var(--muted); cursor:pointer; padding:2px 6px; font-size:14px;
+  display:flex; align-items:center; justify-content:center;
+}
+.chat-item .icon:hover,
+.project-options .icon:hover{ color:#fff }
+.theme-light .chat-item .icon:hover,
+.theme-light .project-options .icon:hover{ color:#000 }
+
+
+/* ================================================== */
+/* ================== CHUNK: BUTTONS =================*/
+/* ================================================== */
+
+.btn{
+  border:1px solid var(--border);
+  background:var(--panel-2);
+  color:var(--text);
+  padding:8px 10px;
+  border-radius:10px;
+  cursor:pointer;
+}
+.btn.small{ padding:6px 8px; font-size:12px }
+.btn.ghost{ background:transparent }
+.btn.icon{ width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center }
+
+
+/* ================================================== */
+/* ================== CHUNK: TOPBAR ================== */
+/* ================================================== */
+.main{ display:flex; flex-direction:column; height:100vh; overflow:hidden }
+
+.topbar{
+  position:sticky; top:0; z-index:5;
+  display:flex; align-items:center; justify-content:space-between;
+  height:44px; padding:0 12px;
+  background:var(--bg); backdrop-filter:blur(var(--blur));
+}
+
+.topbar .left{ display:flex; align-items:center; gap:8px }
+.topbar .title{ font-weight:600; font-size:13px; line-height:1.2 }
+.topbar .right{ display:flex; align-items:center; gap:8px }
+
+/* Model selector — readable in BOTH themes */
+.tab{
+  background: var(--panel-2);           /* was transparent → unreadable in dark */
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.2;
+}
+.tab:focus{ outline:1px solid var(--border) }
+.tab option{ background: var(--panel); color: var(--text) }
+.theme-light .tab option{ background:#fff; color:#111 }
+
+
+
+/* ================================================== */
+/* ================== CHUNK: CHAT =================== */
+/* ================================================== */
+
+.chat{ flex:1; overflow:auto; padding:24px 16px 8px 16px }
+.row{
+  display:flex;
+  margin:10px auto;
+  width:min(var(--chat-col), 100%);
+}
+.row.me{ justify-content:flex-end }
+.row.ai{ justify-content:flex-start }
+
+.bubble{
+  position:relative;
+  max-width:100%;
+  padding:12px 14px;
+  border-radius:var(--radius);
+  line-height:1.45;
+  box-shadow:var(--shadow);
+  border:1px solid var(--border);
+}
+
+/* User bubble */
+.bubble.user{
+  background:linear-gradient(180deg, rgba(var(--primary-rgb), .30), rgba(var(--primary-rgb), .22));
+  color:#fff;
+  border-color:rgba(var(--primary-rgb), .35);
+}
+.theme-light .bubble.user{
+  background:linear-gradient(180deg, rgba(var(--primary-rgb), .22), rgba(var(--primary-rgb), .16));
+  color:#111113;
+  border-color:rgba(var(--primary-rgb), .22);
+}
+
+/* Assistant bubble */
+.bubble.assistant{
+  /* ChatGPT-style: assistant has no bubble/card, just content on the canvas. */
+  background:transparent;
+  backdrop-filter:none;
+  border:0;
+  box-shadow:none;
+  border-radius:0;
+  /* Keep a little right padding so the hover copy button doesn't overlap text. */
+  padding:0 34px 0 0;
+  color: var(--text);
+  width:100%;
+  text-align:left;
+}
+
+/* Content & timestamp */
+.bubble .content{ white-space:normal; overflow-wrap:anywhere }
+.bubble .ts{ margin-top:6px; font-size:12px; color:var(--muted) }
+
+/* Markdown / GFM typography */
+.md{ font-size:14px; line-height:1.55 }
+.md > *:first-child{ margin-top:0 }
+.md > *:last-child{ margin-bottom:0 }
+.md p{ margin:10px 0 }
+.md h1,.md h2,.md h3{ margin:16px 0 10px 0; line-height:1.25 }
+.md h1{ font-size:20px }
+.md h2{ font-size:18px }
+.md h3{ font-size:16px }
+.md ul,.md ol{ margin:10px 0; padding-left:20px }
+.md li{ margin:4px 0 }
+.md hr{ border:0; border-top:1px solid var(--border); margin:18px 0; opacity:.85 }
+.md blockquote{
+  margin:12px 0;
+  padding:8px 12px;
+  border-left:3px solid rgba(var(--primary-rgb), .35);
+  background:rgba(255,255,255,.03);
+  border-radius:10px;
+}
+.theme-light .md blockquote{ background:rgba(17,17,19,.03) }
+.md table{
+  width:100%;
+  border-collapse:collapse;
+  margin:12px 0;
+  overflow:hidden;
+  border-radius:12px;
+}
+.md th,.md td{
+  border:1px solid var(--border);
+  padding:8px 10px;
+  text-align:left;
+  vertical-align:top;
+}
+.md thead th{ background:rgba(255,255,255,.04) }
+.theme-light .md thead th{ background:rgba(17,17,19,.03) }
+.md a{ color:rgba(var(--primary-rgb), .95); text-decoration:underline; text-underline-offset:2px }
+.md a:hover{ opacity:.9 }
+.md code.inline-code{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  padding:1px 6px;
+  border-radius:8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size:.95em;
+}
+.theme-light .md code.inline-code{
+  background:rgba(17,17,19,.04);
+  border-color:rgba(17,17,19,.08);
+}
+
+/* User messages: stay bubble-sized, not full column width. */
+.row.me .bubble.user{
+  width:auto;
+  max-width:min(560px, 72%);
+}
+
+
+/* ================================================== */
+/* ============ CHUNK: COPY BUTTON (CHAT) =========== */
+/* ================================================== */
+
+.copy{
+  position:absolute; right:10px; top:8px;
+  opacity:0; transform:translateY(-2px);
+  transition: opacity .18s ease, transform .18s ease;
+  background:transparent; border:0; cursor:pointer;
+  font-size:14px; color:var(--muted);
+}
+.bubble.assistant:hover .copy{ opacity:1 }
+.copy:hover{ color:#fff }
+.theme-light .copy:hover{ color:#000 }
+
+
+/* ================================================== */
+/* ============== CHUNK: CHAT DELETE ICONS ========== */
+/* ================================================== */
+
+.chat-nested .list-item.nested{ position:relative; padding-right:34px }
+.chat-nested .list-item.nested .icon{
+  position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  background:transparent; border:0; color:var(--muted); cursor:pointer; padding:2px 6px;
+}
+.chat-nested .list-item.nested .icon:hover{ color:#fff }
+.theme-light .chat-nested .list-item.nested .icon:hover{ color:#000 }
+
+
+/* ================================================== */
+/* =============== CHUNK: INPUT BAR ================= */
+/* ================================================== */
+
+.inputbar{
+  display:flex; align-items:center; gap:10px;
+  padding:12px;
+  border-top:1px solid var(--border);
+  background:linear-gradient(180deg, var(--panel), var(--panel-2));
+  backdrop-filter: blur(var(--blur));
+  width:min(var(--chat-col), 100%);
+  margin:0 auto 16px auto;
+  border:1px solid var(--border);
+  border-radius:16px;
+}
+.input{
+  flex:1; min-height:42px; max-height:200px; overflow:auto; resize:none;
+  background:var(--panel-2); color:var(--text);
+  border:1px solid var(--border);
+  border-radius:12px; padding:10px 12px;
+}
+.send{
+  background:var(--primary); border:0; color:#fff; font-weight:700;
+  padding:10px 14px; border-radius:12px; cursor:pointer;
+  box-shadow:0 10px 30px rgba(var(--primary-rgb),.25);
+}
+.send:disabled{ opacity:.5; cursor:not-allowed }
+.send:hover:not(:disabled){ background:var(--primary-2) }
+
+/* Mic fixed contrast */
+.mic{
+  width:42px; height:42px; border-radius:50%;
+  border:1px solid var(--border);
+  background:var(--panel-2);
+  color:#fff;                 /* dark */
+  cursor:pointer;
+}
+.theme-light .mic{ color:#000 }  /* light */
+.mic.on{ outline:2px solid rgba(var(--primary-rgb),.45); animation: mic-pulse 1.6s infinite }
+@keyframes mic-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb),0.25) }
+  70%{ box-shadow: 0 0 0 10px rgba(var(--primary-rgb),0.03) }
+  100%{ box-shadow: 0 0 0 0 rgba(var(--primary-rgb),0) }
+}
+
+
+/* ================================================== */
+/* ================= CHUNK: FILES UI ================ */
+/* ================================================== */
+
+.file-row:hover{ background:var(--panel) }
+
+
+/* ================================================== */
+/* ============== CHUNK: SCROLLBARS ================= */
+/* ================================================== */
+
+*::-webkit-scrollbar{ width:10px; height:10px }
+*::-webkit-scrollbar-thumb{
+  background:rgba(120,130,150,.35);
+  border-radius:8px;
+  border:2px solid transparent;
+  background-clip:padding-box;
+}
+*::-webkit-scrollbar-track{ background:transparent }
+
+
+/* ================================================== */
+/* ============== CHUNK: RESPONSIVE ================= */
+/* ================================================== */
+
+@media (max-width: 980px){
+  .layout{ grid-template-columns: 64px 1fr }
+  :root{ --chat-col: 100% }
+}
+
+
+/* ================================================== */
+/* ============== CHUNK: CODE BLOCKS ================ */
+/* ================================================== */
+
+pre{
+  background: var(--panel-2); border:1px solid var(--border); border-radius:10px;
+  padding:14px; margin:10px 0; overflow-x:auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size:14px; line-height:1.4; position:relative;
+}
+pre code{ background:none; color:var(--text); white-space:pre }
+pre .copy-btn{
+  position:absolute; top:8px; right:8px; background:var(--panel);
+  border:1px solid var(--border); color:var(--muted);
+  padding:4px 8px; border-radius:6px; font-size:12px; cursor:pointer; opacity:0;
+  transition: opacity .2s, background .2s;
+}
+pre:hover .copy-btn{ opacity:1 }
+pre .copy-btn:hover{ color:#fff; background:var(--panel-2) }
+.theme-light pre .copy-btn:hover{ color:#000; background:var(--panel) }
+
+
+/* ================================================== */
+/* ========= CHUNK: MODAL & DASHBOARD STYLES ========= */
+/* ================================================== */
+.overlay{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  backdrop-filter: blur(6px);
+  background:rgba(6,8,12,.45);
+  z-index:1000;
+}
+.modal{
+  width:min(640px, 92vw);
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:16px;
+  box-shadow:var(--shadow);
+  padding:16px;
+}
+.modal-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px }
+.modal-title{ font-weight:700; font-size:16px }
+.modal-close{ background:transparent; border:0; color:var(--muted); cursor:pointer; font-size:16px }
+.modal-close:hover{ color:var(--text) }
+.modal-body{ display:flex; flex-direction:column; gap:10px }
+.modal input[type="text"], .modal textarea{
+  width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+  background:var(--panel-2); color:var(--text);
+}
+.modal textarea{ min-height:180px; resize:vertical }
+.modal-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:6px }
+
+/* Dashboard — USE THEME TOKENS (fix light-mode) */
+.dash{ padding:18px }
+.dash-cards{
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:14px;
+}
+.dash-card{
+  background:var(--panel);           /* was hard-coded dark */
+  border:1px solid var(--border);    /* was hard-coded dark */
+  border-radius:12px;
+  box-shadow:none;
+  padding:14px;
+  color:var(--text);
+}
+.dash-card h3{ margin:0 0 8px 0; font-size:16px; color:var(--text); font-weight:600 }
+.dash-card .row{ display:flex; align-items:center; justify-content:space-between }
+.dash-stat{ font-size:14px; color:var(--muted) }
+.dash-actions{ display:flex; gap:8px; flex-wrap:wrap }
+.dash-list{ display:flex; flex-direction:column; gap:6px; margin-top:8px }
+.dash-item{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 10px;
+  border:1px solid var(--border);    /* theme */
+  border-radius:10px;
+  background:var(--panel-2);         /* theme */
+  color:var(--text);                  /* theme */
+  cursor:pointer;
+}
+.dash-item:hover{ background:var(--panel) }
+
+/* ================================================== */
+/* ===== CHUNK: PATCH — PROJECT NAME CONTRAST ======= */
+/* ================================================== */
+.sidebar .project-row { color: var(--text); }
+.sidebar .project-row .project-name {
+  color: var(--text) !important;
+  opacity: 1 !important;
+  font-weight: 600;
+}
+.sidebar .project-row a.project-name,
+.sidebar .project-row span.project-name {
+  color: var(--text) !important;
+  text-decoration: none;
+}
+
+/* ================================================== */
+/* === CHUNK: PATCH — HIDE TOPBAR PROJECT TITLE ===== */
+/* ================================================== */
+.topbar .title{ 
+  display: none !important;   /* hide "Default" (project name) */
+}
+.topbar .left{
+  gap: 0 !important;          /* remove the space the title used */
+}
+.topbar .left .tabs{
+  margin-left: 0 !important;  /* keep the model selector aligned */
+}
+
+/* ================================================== */
+/* === CHUNK: PATCH — DASH CARDS DON'T STRETCH ====== */
+/* ================================================== */
+.dash-cards{
+  align-items: start !important;     /* stop equal-height stretching */
+}
+.dash-card{
+  align-self: start !important;      /* each card uses its own height */
+  height: auto !important;
+  min-height: 0 !important;
+}

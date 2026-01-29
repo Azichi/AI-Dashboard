@@ -1,0 +1,43 @@
+# ===================== CORE (ROOT) =====================
+# Local runtime data & scratch
+data/
+output/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs & OS junk
+*.log
+.DS_Store
+
+# Secrets (never send to build context)
+.env
+
+# Git history (skip huge .git if present)
+.git/
+
+# If a root node_modules ever appears, keep it out
+node_modules/
+
+# If you ever produce a root build/ (backend can also look here)
+build/
+
+
+# ===================== FRONTEND =======================
+# React app dependencies & artifacts (heavy)
+gpt-chat/node_modules/
+
+# If your Dockerfile builds the frontend inside the image,
+# keep this line. If your Dockerfile copies a prebuilt UI
+# from host, comment this out so the build/ gets included.
+gpt-chat/build/
+
+# You said Tauri isn’t needed — exclude all of it
+gpt-chat/src-tauri/
+
+# Misc caches you don’t want in images
+gpt-chat/.cache/
+gpt-chat/.parcel-cache/
+gpt-chat/.next/
